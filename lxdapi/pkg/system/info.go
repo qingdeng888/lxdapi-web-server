@@ -2,6 +2,7 @@ package system
 
 import (
 	"os/exec"
+	"lxdapi/internal/incus"
 	"runtime"
 	"strings"
 	"os"
@@ -14,7 +15,7 @@ type SystemInfo struct {
 	Docs         string `json:"docs"`
 	OS           string `json:"os"`
 	Arch         string `json:"arch"`
-	LXDVersion   string `json:"lxd_version,omitempty"`
+	IncusVersion string `json:"virtualization_version,omitempty"`
 	Distribution string `json:"distribution,omitempty"`
 	Kernel       string `json:"kernel,omitempty"`
 }
@@ -23,14 +24,14 @@ func GetSystemInfo() *SystemInfo {
 	info := &SystemInfo{
 		Name:        "lxdapi",
 		Version:     "v2.1.3",
-		Description: "LXD容器管理后端API服务",
+		Description: "Incus容器管理后端API服务",
 		Docs:        "/swagger/index.html",
 		OS:          runtime.GOOS,
 		Arch:        runtime.GOARCH,
 	}
 	
-	if lxdVersion := getLXDVersion(); lxdVersion != "" {
-		info.LXDVersion = lxdVersion
+	if incusVersion := getIncusVersion(); incusVersion != "" {
+		info.IncusVersion = incusVersion
 	}
 	
 	if kernel := getKernelVersion(); kernel != "" {
@@ -44,8 +45,8 @@ func GetSystemInfo() *SystemInfo {
 	return info
 }
 
-func getLXDVersion() string {
-	cmd := exec.Command("lxc", "version")
+func getIncusVersion() string {
+	cmd := exec.Command(incus.Binary(), "version")
 	output, err := cmd.Output()
 	if err != nil {
 		return ""

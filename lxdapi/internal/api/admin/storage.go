@@ -58,13 +58,13 @@ func GetStoragePools(c *gin.Context) {
 }
 
 // SyncStoragePools 同步存储池
-// @Summary 从LXD同步存储池
+// @Summary 从Incus同步存储池
 // @Tags Admin API - 存储池管理
 // @Success 200 {object} response.Response
 // @Router /api/admin/storage-pools/sync [post]
 func SyncStoragePools(c *gin.Context) {
 	svc := service.NewStorageService()
-	added, updated, deleted, err := svc.SyncFromLXD(c.Request.Context())
+	added, updated, deleted, err := svc.SyncFromIncus(c.Request.Context())
 	if err != nil {
 		logger.Error("同步存储池失败: %v", err)
 		response.Error(c, 500, "同步失败: "+err.Error())

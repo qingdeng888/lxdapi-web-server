@@ -1668,7 +1668,7 @@ const docTemplate = `{
                 "tags": [
                     "Admin API - 存储池管理"
                 ],
-                "summary": "从LXD同步存储池",
+                "summary": "从Incus同步存储池",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2132,7 +2132,7 @@ const docTemplate = `{
                         "SessionAuth": []
                     }
                 ],
-                "description": "从LXD同步模板到数据库",
+                "description": "从Incus同步模板到数据库",
                 "consumes": [
                     "application/json"
                 ],
@@ -3098,7 +3098,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "创建一个新的LXD容器，支持配置CPU、内存、磁盘、带宽等资源",
+                "description": "创建一个新的Incus容器，支持配置CPU、内存、磁盘、带宽等资源",
                 "consumes": [
                     "application/json"
                 ],

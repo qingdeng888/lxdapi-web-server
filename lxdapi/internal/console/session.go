@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"lxdapi/internal/incus"
 	"lxdapi/pkg/logger"
 	"os/exec"
 	"sync"
@@ -39,7 +40,7 @@ func CreateSession(containerName string, conn *websocket.Conn) (*Session, error)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	cmd := exec.CommandContext(ctx, "lxc", "exec", containerName,
+	cmd := incus.CommandContext(ctx, "exec", containerName,
 		"-t",
 		"--env", "TERM=xterm-256color",
 		"--env", "COLORTERM=truecolor",
@@ -221,4 +222,3 @@ func (s *Session) Close() {
 	delete(sessionManager.sessions, s.ID)
 	sessionManager.mutex.Unlock()
 }
-

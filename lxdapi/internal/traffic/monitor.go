@@ -8,17 +8,16 @@ import (
 	"lxdapi/internal/db"
 	"lxdapi/internal/ipv4"
 	"lxdapi/internal/ipv6"
-	"lxdapi/internal/lxc"
+	"lxdapi/internal/incus"
 	"lxdapi/models"
 	"lxdapi/pkg/logger"
 	"lxdapi/pkg/plugin"
-	"os/exec"
 	"strings"
 	"time"
 )
 
 type Monitor struct {
-	lxcClient *lxc.Client
+	incusClient *incus.Client
 	interval  time.Duration
 	batchSize int
 }
@@ -33,7 +32,7 @@ func InitMonitor() error {
 	}
 	
 	GlobalMonitor = &Monitor{
-		lxcClient: lxc.NewClient(),
+		incusClient: incus.NewClient(),
 		interval:  time.Duration(cfg.Interval) * time.Second,
 		batchSize: cfg.BatchSize,
 	}
@@ -100,7 +99,7 @@ func (m *Monitor) collect() {
 }
 
 func (m *Monitor) getRunningContainers() ([]string, error) {
-	cmd := exec.Command("lxc", "list", "--format=csv", "--columns=n,s")
+	cmd := incus.CommandContext(context.Background(), "list", "--format=csv", "--columns=n,s")
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("获取容器列表失败: %v", err)
@@ -148,7 +147,7 @@ type ContainerState struct {
 }
 
 func (m *Monitor) getContainerNetStats(name string) *NetworkCounters {
-	cmd := exec.Command("lxc", "query", fmt.Sprintf("/1.0/instances/%s/state", name))
+	cmd := incus.CommandContext(context.Background(), "query", fmt.Sprintf("/1.0/instances/%s/state", name))
 	output, err := cmd.Output()
 	if err != nil {
 		return nil
@@ -218,7 +217,7 @@ func (m *Monitor) handleOverLimit(containerName string, current float64, limit i
 	
 	ctx := context.Background()
 	
-	if err := m.lxcClient.StopContainer(ctx, containerName); err != nil {
+	if err := m.incusClient.StopContainer(ctx, containerName); err != nil {
 		logger.Error("自动停止超限容器失败 %s: %v", containerName, err)
 		return
 	}
@@ -263,7 +262,7 @@ func (m *Monitor) stopLockedContainer(containerName string) {
 	}
 	
 	ctx := context.Background()
-	if err := m.lxcClient.StopContainer(ctx, containerName); err == nil {
+	if err := m.incusClient.StopContainer(ctx, containerName); err == nil {
 		db.DB.Model(&models.Container{}).Where("name = ?", containerName).Update("status", "stopped")
 		logger.Warn("流量锁定容器尝试运行已被自动停止: %s", containerName)
 	}
@@ -393,7 +392,7 @@ func (m *Monitor) handleUserOverLimit(user *models.User, containers []models.Con
 		if c.Status == "stopped" {
 			continue
 		}
-		if err := m.lxcClient.StopContainer(ctx, c.Name); err != nil {
+		if err := m.incusClient.StopContainer(ctx, c.Name); err != nil {
 			logger.Error("停止用户超限容器失败 %s: %v", c.Name, err)
 			continue
 		}
@@ -459,8 +458,8 @@ func (m *Monitor) syncContainerIP(containerName string) {
 
 	ctx := context.Background()
 
-	actualIPv4, _ := m.lxcClient.GetContainerIP(ctx, containerName)
-	actualIPv6, _ := m.lxcClient.GetContainerIPv6(ctx, containerName)
+	actualIPv4, _ := m.incusClient.GetContainerIP(ctx, containerName)
+	actualIPv6, _ := m.incusClient.GetContainerIPv6(ctx, containerName)
 
 	ipv4Changed := actualIPv4 != "" && actualIPv4 != container.PrivateIP
 	ipv6Changed := actualIPv6 != "" && actualIPv6 != container.PrivateIPv6

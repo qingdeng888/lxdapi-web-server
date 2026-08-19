@@ -73,7 +73,7 @@ func MergeTemplateData(c *gin.Context, data gin.H) gin.H {
 			data["UseLocalCDN"] = settings.UseLocalCDN
 		} else {
 			data["SystemName"] = "LXD API - 管理后台"
-			data["title"] = "管理后台 - LXD容器管理系统"
+			data["title"] = "管理后台 - Incus容器管理系统"
 			data["LoginTitle"] = "管理员登录"
 			data["FooterText"] = "LXD API 容器管理平台"
 		}

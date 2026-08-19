@@ -54,7 +54,7 @@ func GetDashboard(c *gin.Context) {
 			"arch":         sysInfo.Arch,
 			"kernel":       sysInfo.Kernel,
 			"distribution": sysInfo.Distribution,
-			"lxd_version":  sysInfo.LXDVersion,
+			"virtualization_version": sysInfo.IncusVersion,
 		},
 	})
 }
@@ -78,4 +78,3 @@ func GetHostStats(c *gin.Context) {
 	
 	response.Success(c, stats)
 }
-

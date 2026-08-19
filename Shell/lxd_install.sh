@@ -65,38 +65,11 @@ get_available_space() {
 
 install_lxd() {
     apt-get update >/dev/null 2>&1
-    info "正在安装 snapd 服务..."
-    apt-get install -y snapd
+    info "安装 Incus 和 ZFS..."
+    apt-get install -y incus zfsutils-linux
+    command -v incus >/dev/null 2>&1 || err '未找到 incus 命令'
     
-    info "正在升级 snapd 自身组件..."
-    snap install snapd 2>/dev/null || snap install snapd
-    
-    info "正在检查并就绪 snap core 组件..."
-    if ! snap list core >/dev/null 2>&1; then
-        snap install core 2>/dev/null || snap install core
-    fi
-    
-    info "开始安装 LXD..."
-    snap install lxd --channel=latest/stable 2>/dev/null || snap install lxd --channel=latest/stable
-    
-    snap alias lxd.lxc lxc 2>/dev/null
-    snap alias lxd.lxd lxd 2>/dev/null
-    if [ ! -f /etc/profile.d/snap.sh ]; then
-        echo 'export PATH=$PATH:/snap/bin' > /etc/profile.d/snap.sh
-    fi
-    export PATH=$PATH:/snap/bin
-    
-    if ! command -v lxc >/dev/null 2>&1; then
-        err 'lxc 路径有问题，请检查 snap alias'
-    fi
-    
-    lxd_lxc_detect=$(lxc list 2>/dev/null)
-    if [[ "$lxd_lxc_detect" =~ "snap-update-ns failed with code1".* ]]; then
-        systemctl restart apparmor
-        snap restart lxd
-    fi
-    
-    ok "LXD 安装完成"
+    ok "Incus 安装完成"
     
     if dpkg -l lxcfs 2>/dev/null | grep -q "^ii"; then
         warn "检测到 deb 版 lxcfs，正在移除..."
@@ -106,29 +79,12 @@ install_lxd() {
         ok "deb 版 lxcfs 已移除"
     fi
     
-    lxd_version=$(lxd --version 2>/dev/null)
-    info "LXD 版本: $lxd_version"
-    if [[ ! "$lxd_version" =~ ^6\. ]]; then
-        warn "当前 LXD 版本 $lxd_version 不兼容，推荐使用 6.x 版本"
-        reading "是否继续？(y/n) [y]：" version_confirm
-        version_confirm=${version_confirm:-y}
-        if [[ ! "$version_confirm" =~ ^[yY]$ ]]; then
-            err "已取消安装"
-        fi
-    else
-        ok "LXD 版本兼容"
-    fi
-    
-    info "配置 LXD..."
-    snap set lxd lxcfs.flags="-l" 2>/dev/null
-    snap set lxd daemon.debug=false 2>/dev/null
-    snap restart lxd 2>/dev/null
-    sleep 3
-    ok "LXD 已配置"
+    incus_version=$(incus version 2>/dev/null)
+    info "Incus 版本: $incus_version"
 }
 
 init_lxd_network() {
-    info "初始化 LXD 网络..."
+	info "初始化 Incus 网络..."
     reading "是否启用 IPv4？输入 y 或 n，默认 y：" enable_ipv4
     enable_ipv4=${enable_ipv4:-y}
     reading "是否启用 IPv6？输入 y 或 n，默认 y：" enable_ipv6
@@ -145,7 +101,7 @@ init_lxd_network() {
         ipv6_config="fd66:6666::1/64"
         ipv6_nat="true"
     fi
-    cat <<EOF | lxd init --preseed
+    cat <<EOF | incus admin init --preseed
 config:
   images.auto_update_interval: "0"
 networks:
@@ -155,7 +111,7 @@ networks:
     ipv6.address: $ipv6_config
     ipv6.nat: "$ipv6_nat"
   description: ""
-  name: lxdbr0
+  name: incusbr0
   type: bridge
 storage_pools: []
 storage_volumes: []
@@ -165,19 +121,19 @@ profiles:
   devices:
     eth0:
       name: eth0
-      network: lxdbr0
+      network: incusbr0
       type: nic
   name: default
 projects: []
 cluster: null
 EOF
-    ok "LXD 网络初始化完成"
+	ok "Incus 网络初始化完成"
 }
 
 main() {
     echo
     echo "========================================"
-    echo "        LXD 安装脚本"
+	 echo "        Incus 安装脚本"
     echo "        by Github-xkatld"
     echo "========================================"
     echo
@@ -187,19 +143,19 @@ main() {
     ok "系统检测通过"
     echo
     
-    echo "======== 步骤 2/3: 安装 LXD ========"
-    reading "是否安装 LXD？输入 y 或 n，默认 y：" step2_confirm
+	 echo "======== 步骤 2/3: 安装 Incus ========"
+	 reading "是否安装 Incus？输入 y 或 n，默认 y：" step2_confirm
     step2_confirm=${step2_confirm:-y}
     if [[ "$step2_confirm" =~ ^[yY]$ ]]; then
         install_lxd
-        ok "LXD 安装完成"
+		ok "Incus 安装完成"
     else
-        info "已跳过 LXD 安装"
+	info "已跳过 Incus 安装"
     fi
     echo
     
     echo "======== 步骤 3/3: 配置网络 ========"
-    reading "是否配置 LXD 默认网络？输入 y 或 n，默认 y：" step3_confirm
+	reading "是否配置 Incus 默认网络？输入 y 或 n，默认 y：" step3_confirm
     step3_confirm=${step3_confirm:-y}
     if [[ "$step3_confirm" =~ ^[yY]$ ]]; then
         init_lxd_network
@@ -211,13 +167,13 @@ main() {
     echo "======== 安装完成 ========"
     echo
     echo "========================================"
-    echo "        LXD 安装完成"
+	 echo "        Incus 安装完成"
     echo "========================================"
     echo
-    info "LXD 版本: $(lxd --version 2>/dev/null)"
+	info "Incus 版本: $(incus version 2>/dev/null)"
     echo
     info "===== 网络配置 ====="
-    lxc network list 2>/dev/null || warn "无法获取网络列表"
+	incus network list 2>/dev/null || warn "无法获取网络列表"
 }
 
 main

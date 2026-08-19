@@ -2,6 +2,7 @@ package opengfw
 
 import (
 	"fmt"
+	"lxdapi/internal/core"
 	"lxdapi/pkg/logger"
 	"os/exec"
 	"strings"
@@ -28,16 +29,17 @@ func (m *NFTablesManager) Setup() error {
 	logger.Info("添加 nftables NFQueue 规则: 队列号 %d", m.queueNum)
 	
 	// 入站流量拦截
-	cmdIn := fmt.Sprintf("nft add rule inet lxdfilter forward iifname \"lxdbr0\" queue num %d bypass", m.queueNum)
+	bridge := core.GlobalConfig.Virtualization.DefaultNetwork
+	cmdIn := fmt.Sprintf("nft add rule inet lxdfilter forward iifname \"%s\" queue num %d bypass", bridge, m.queueNum)
 	// 出站流量拦截
-	cmdOut := fmt.Sprintf("nft add rule inet lxdfilter forward oifname \"lxdbr0\" queue num %d bypass", m.queueNum)
+	cmdOut := fmt.Sprintf("nft add rule inet lxdfilter forward oifname \"%s\" queue num %d bypass", bridge, m.queueNum)
 	
 	if err := m.execCommand(cmdIn); err != nil {
 		return fmt.Errorf("添加 nftables 规则失败: %v", err)
 	}
 	if err := m.execCommand(cmdOut); err != nil {
 		// 尝试回滚
-		handle := m.findHandle("iifname \"lxdbr0\"")
+		handle := m.findHandle(fmt.Sprintf("iifname \"%s\"", bridge))
 		if handle != "" {
 			exec.Command("nft", "delete", "rule", "inet", "lxdfilter", "forward", "handle", handle).Run()
 		}

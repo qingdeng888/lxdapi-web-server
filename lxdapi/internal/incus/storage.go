@@ -1,4 +1,4 @@
-package lxc
+package incus
 
 import (
 	"context"
@@ -24,7 +24,7 @@ type StoragePoolResources struct {
 }
 
 func (c *Client) ListStoragePools(ctx context.Context) ([]StoragePoolInfo, error) {
-	logger.Info("获取LXD存储池列表")
+	logger.Info("获取Incus存储池列表")
 
 	output, err := c.exec(ctx, "storage", "list", "--format", "json")
 	if err != nil {

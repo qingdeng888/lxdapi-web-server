@@ -6,12 +6,22 @@ import (
 )
 
 type Config struct {
-	System   SystemConfig   `yaml:"system"`
-	LXC      LXCConfig      `yaml:"lxc"`
+	System         SystemConfig         `yaml:"system"`
+	Virtualization VirtualizationConfig `yaml:"virtualization"`
 	Traffic  TrafficConfig  `yaml:"traffic"`
 	Task     TaskConfig     `yaml:"task"`
 	Admin    AdminConfig    `yaml:"admin"`
 	Plugins  PluginsConfig  `yaml:"plugins"`
+}
+
+type VirtualizationConfig struct {
+	Provider       string `yaml:"provider"` // incus
+	Binary         string `yaml:"binary"`
+	Remote         string `yaml:"remote"`
+	Socket         string `yaml:"socket"`
+	Timeout        int    `yaml:"timeout"`
+	DefaultStorage string `yaml:"default_storage"`
+	DefaultNetwork string `yaml:"default_network"`
 }
 
 type SystemConfig struct {
@@ -42,12 +52,6 @@ type SecurityConfig struct {
 type LoggerConfig struct {
 	Level    string `yaml:"level"`
 	Colorful bool   `yaml:"colorful"`
-}
-
-type LXCConfig struct {
-	Socket         string `yaml:"socket"`
-	Timeout        int    `yaml:"timeout"`
-	DefaultStorage string `yaml:"default_storage"`
 }
 
 type TrafficConfig struct {
@@ -124,6 +128,26 @@ func LoadConfig(path string) error {
 		return err
 	}
 	GlobalConfig = &Config{}
-	return yaml.Unmarshal(data, GlobalConfig)
+	if err := yaml.Unmarshal(data, GlobalConfig); err != nil {
+		return err
+	}
+	if GlobalConfig.Virtualization.Provider == "" {
+		GlobalConfig.Virtualization.Provider = "incus"
+	}
+	if GlobalConfig.Virtualization.Binary == "" { GlobalConfig.Virtualization.Binary = "incus" }
+	if GlobalConfig.Virtualization.Remote == "" {
+		GlobalConfig.Virtualization.Remote = "local"
+	}
+	if GlobalConfig.Virtualization.Timeout == 0 {
+	}
+	if GlobalConfig.Virtualization.Timeout == 0 {
+		GlobalConfig.Virtualization.Timeout = 300
+	}
+	if GlobalConfig.Virtualization.DefaultStorage == "" {
+		GlobalConfig.Virtualization.DefaultStorage = "default"
+	}
+	if GlobalConfig.Virtualization.DefaultNetwork == "" {
+		GlobalConfig.Virtualization.DefaultNetwork = "incusbr0"
+	}
+	return nil
 }
-

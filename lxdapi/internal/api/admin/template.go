@@ -38,7 +38,7 @@ func GetTemplateList(c *gin.Context) {
 
 // SyncTemplates 同步模板
 // @Summary 同步模板
-// @Description 从LXD同步模板到数据库
+// @Description 从Incus同步模板到数据库
 // @Tags Admin API - 模板管理
 // @Accept json
 // @Produce json
@@ -52,7 +52,7 @@ func SyncTemplates(c *gin.Context) {
 	
 	logger.Info("开始同步模板")
 	
-	added, updated, deleted, err := svc.SyncFromLXD(ctx)
+	added, updated, deleted, err := svc.SyncFromIncus(ctx)
 	if err != nil {
 		logger.Error("同步模板失败: %v", err)
 		response.Error(c, 500, "同步模板失败: "+err.Error())

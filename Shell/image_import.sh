@@ -1,12 +1,8 @@
 #!/bin/bash
-if ! command -v lxc >/dev/null 2>&1; then
-    echo -e "\033[0;31m[ERROR]\033[0m 未检测到 lxc 命令，请关闭当前终端并重新打开，或者重新连接终端后，再次运行此脚本" >&2
+if ! command -v incus >/dev/null 2>&1; then
+	 echo -e "\033[0;31m[ERROR]\033[0m 未检测到 incus 命令，请先安装 Incus" >&2
     exit 1
 fi
-
-lxc() {
-    command lxc "$@"
-}
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -14,7 +10,7 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-LXC="lxc"
+INCUS="incus"
 
 ok() { echo -e "${GREEN}[OK]${NC} $1"; }
 err() { echo -e "${RED}[ERROR]${NC} $1"; }
@@ -74,10 +70,10 @@ download_and_import() {
     
     local temp_file=$(mktemp)
     if wget -q --show-progress -O "$temp_file" "$image_url" 2>&1; then
-        info "导入到 LXD..."
+		info "导入到 Incus..."
         local alias="${image_name}-${image_type}"
         local import_err=$(mktemp)
-        if $LXC image import "$temp_file" --alias "$alias" 2>"$import_err"; then
+		if $INCUS image import "$temp_file" --alias "$alias" 2>"$import_err"; then
             ok "成功导入: $alias"
         else
             warn "导入失败: $alias"
@@ -113,7 +109,7 @@ menu_import() {
     reading "输入编号，多个用空格或逗号分隔，或输入 all 全部导入 [默认 8 9 17 18]：" image_choices
     image_choices=${image_choices:-"8 9 17 18"}
     
-    local image_type="lxc"
+	local image_type="lxc"
     
     selected_images=()
     if [[ "$image_choices" == "all" ]]; then
@@ -150,13 +146,13 @@ menu_import() {
 menu_list() {
     echo
     info "=== 已有镜像 ==="
-    $LXC image list
+	$INCUS image list
 }
 
 menu_delete() {
     echo
     info "=== 删除镜像 ==="
-    $LXC image list
+	$INCUS image list
     echo
     reading "输入要删除的镜像别名或指纹：" image_id
     if [ -z "$image_id" ]; then
@@ -166,7 +162,7 @@ menu_delete() {
     warn "确认删除镜像 $image_id？"
     reading "确认选择请输入 y，取消请输入 n，默认 n：" confirm
     if [[ "$confirm" =~ ^[yY]$ ]]; then
-        if $LXC image delete "$image_id"; then
+		if $INCUS image delete "$image_id"; then
             ok "镜像已删除"
         else
             err "删除失败"
@@ -180,7 +176,7 @@ main_menu() {
     while true; do
         echo
         echo "================================"
-        echo "      LXD 镜像管理脚本"
+		echo "      Incus 镜像管理脚本"
         echo "    LXDAPI by Github-xkatld"
         echo "================================"
         echo "1. 导入镜像"

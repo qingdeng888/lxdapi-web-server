@@ -322,7 +322,7 @@ func main() {
 			"docs":         sysInfo.Docs,
 			"os":           sysInfo.OS,
 			"arch":         sysInfo.Arch,
-			"lxd_version":  sysInfo.LXDVersion,
+			"virtualization_version": sysInfo.IncusVersion,
 			"distribution": sysInfo.Distribution,
 			"kernel":       sysInfo.Kernel,
 		})
@@ -629,4 +629,3 @@ func generateSelfSignedCert(certMgr *tlsManager.CertificateManager) {
 		logger.OK("使用现有证书")
 	}
 }
-

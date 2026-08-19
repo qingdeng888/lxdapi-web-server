@@ -17,7 +17,7 @@ func InitContainerService(svc *service.ContainerService) {
 
 // CreateContainer 创建容器
 // @Summary 创建容器
-// @Description 创建一个新的LXD容器，支持配置CPU、内存、磁盘、带宽等资源
+// @Description 创建一个新的Incus容器，支持配置CPU、内存、磁盘、带宽等资源
 // @Tags System API - 容器管理
 // @Accept json
 // @Produce json

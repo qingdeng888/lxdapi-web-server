@@ -7,18 +7,18 @@ import (
 	"lxdapi/internal/db"
 	"lxdapi/internal/ipv4"
 	"lxdapi/internal/ipv6"
-	"lxdapi/internal/lxc"
+	"lxdapi/internal/incus"
 	"lxdapi/models"
 	"lxdapi/pkg/logger"
 )
 
 type PortMappingService struct {
-	lxcClient *lxc.Client
+	incusClient *incus.Client
 }
 
 func NewPortMappingService() *PortMappingService {
 	return &PortMappingService{
-		lxcClient: lxc.NewClient(),
+		incusClient: incus.NewClient(),
 	}
 }
 

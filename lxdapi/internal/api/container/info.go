@@ -399,8 +399,8 @@ func GetDNS(c *gin.Context) {
 	containerName := name.(string)
 	
 	ctx := context.Background()
-	lxcClient := service.NewContainerService().GetLXCClient()
-	dnsServers, err := lxcClient.GetContainerDNS(ctx, containerName)
+	incusClient := service.NewContainerService().GetIncusClient()
+	dnsServers, err := incusClient.GetContainerDNS(ctx, containerName)
 	if err != nil {
 		response.Error(c, 500, err.Error())
 		return
@@ -430,9 +430,9 @@ func SetDNS(c *gin.Context) {
 	}
 	
 	ctx := context.Background()
-	lxcClient := service.NewContainerService().GetLXCClient()
+	incusClient := service.NewContainerService().GetIncusClient()
 	
-	if err := lxcClient.SetContainerDNS(ctx, containerName, req.DNS); err != nil {
+	if err := incusClient.SetContainerDNS(ctx, containerName, req.DNS); err != nil {
 		response.Error(c, 500, err.Error())
 		return
 	}

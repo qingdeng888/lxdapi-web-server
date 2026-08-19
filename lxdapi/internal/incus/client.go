@@ -1,4 +1,4 @@
-package lxc
+package incus
 
 import (
 	"bytes"
@@ -18,20 +18,31 @@ type Client struct {
 }
 
 func NewClient() *Client {
-	cfg := core.GlobalConfig.LXC
+	cfg := core.GlobalConfig.Virtualization
 	return &Client{
 		socket:  cfg.Socket,
 		timeout: time.Duration(cfg.Timeout) * time.Second,
 	}
 }
 
+func Binary() string {
+	if core.GlobalConfig != nil && core.GlobalConfig.Virtualization.Binary != "" {
+		return core.GlobalConfig.Virtualization.Binary
+	}
+	return "incus"
+}
+
+func CommandContext(ctx context.Context, args ...string) *exec.Cmd {
+	return exec.CommandContext(ctx, Binary(), args...)
+}
+
 func (c *Client) exec(ctx context.Context, args ...string) (string, error) {
-	cmd := exec.CommandContext(ctx, "lxc", args...)
+	cmd := CommandContext(ctx, args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	
-	logger.Info("执行LXC命令: lxc %s", strings.Join(args, " "))
+	logger.Info("执行虚拟化命令: %s %s", Binary(), strings.Join(args, " "))
 	
 	err := cmd.Run()
 	if err != nil {
@@ -53,4 +64,3 @@ func (c *Client) execJSON(ctx context.Context, result interface{}, args ...strin
 	}
 	return json.Unmarshal([]byte(output), result)
 }
-

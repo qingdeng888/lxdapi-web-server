@@ -34,7 +34,7 @@
                     </svg>
                     存储池管理
                 </h1>
-                <p class="text-sm lg:text-base text-gray-600 mt-1">管理LXD存储池，设置创建容器时的优先级</p>
+                <p class="text-sm lg:text-base text-gray-600 mt-1">管理Incus存储池，设置创建容器时的优先级</p>
             </div>
             <div class="flex gap-2">
                 <button onclick="syncPools()" class="px-3 py-2 text-xs lg:text-sm font-medium text-gray-700 content-box hover:bg-gray-50 border border-gray-200 rounded-lg transition flex items-center gap-2">
@@ -113,7 +113,7 @@
 
         function renderPools() {
             if (poolsData.length === 0) {
-                $('#poolsContent').html('<p class="text-center py-8 text-gray-500">暂无存储池，请点击"同步存储池"从LXD获取</p>');
+                $('#poolsContent').html('<p class="text-center py-8 text-gray-500">暂无存储池，请点击"同步存储池"从Incus获取</p>');
                 return;
             }
 
@@ -174,9 +174,9 @@
         }
 
         function syncPools() {
-            if (!confirm('确认要从LXD同步存储池吗？')) return;
+            if (!confirm('确认要从Incus同步存储池吗？')) return;
 
-            showToast('info', '正在从LXD同步存储池...');
+            showToast('info', '正在从Incus同步存储池...');
 
             $.ajax({
                 url: '/api/admin/storage-pools/sync',

@@ -3,17 +3,17 @@ package service
 import (
 	"context"
 	"lxdapi/internal/db"
-	"lxdapi/internal/lxc"
+	"lxdapi/internal/incus"
 	"lxdapi/models"
 	"lxdapi/pkg/logger"
 )
 
 type StorageService struct {
-	lxcClient *lxc.Client
+	incusClient *incus.Client
 }
 
 func NewStorageService() *StorageService {
-	return &StorageService{lxcClient: lxc.NewClient()}
+	return &StorageService{incusClient: incus.NewClient()}
 }
 
 func (s *StorageService) List() ([]models.StoragePool, error) {
@@ -22,10 +22,10 @@ func (s *StorageService) List() ([]models.StoragePool, error) {
 	return pools, err
 }
 
-func (s *StorageService) SyncFromLXD(ctx context.Context) (int, int, int, error) {
-	logger.Info("开始从LXD同步存储池")
+func (s *StorageService) SyncFromIncus(ctx context.Context) (int, int, int, error) {
+	logger.Info("开始从Incus同步存储池")
 
-	pools, err := s.lxcClient.ListStoragePools(ctx)
+	pools, err := s.incusClient.ListStoragePools(ctx)
 	if err != nil {
 		return 0, 0, 0, err
 	}
@@ -37,7 +37,7 @@ func (s *StorageService) SyncFromLXD(ctx context.Context) (int, int, int, error)
 		lxdPools[p.Name] = true
 
 		var totalSpace, usedSpace int64
-		if res, err := s.lxcClient.GetStoragePoolResources(ctx, p.Name); err == nil {
+		if res, err := s.incusClient.GetStoragePoolResources(ctx, p.Name); err == nil {
 			totalSpace = res.Space.Total
 			usedSpace = res.Space.Used
 		}
@@ -95,7 +95,7 @@ func (s *StorageService) GetDefault() string {
 	db.DB.Where("priority > 0").Order("priority ASC").Find(&pools)
 
 	for _, pool := range pools {
-		res, err := s.lxcClient.GetStoragePoolResources(ctx, pool.Name)
+		res, err := s.incusClient.GetStoragePoolResources(ctx, pool.Name)
 		if err != nil {
 			continue
 		}

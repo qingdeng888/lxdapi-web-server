@@ -803,11 +803,11 @@
         }
 
         function updateContainerList() {
-            if (!confirm('确定要从LXD重新获取所有容器并更新缓存吗？这可能需要一些时间。')) {
+            if (!confirm('确定要从Incus重新获取所有容器并更新缓存吗？这可能需要一些时间。')) {
                 return;
             }
 
-            showToast('info', '正在从LXD获取容器列表...');
+            showToast('info', '正在从Incus获取容器列表...');
 
             $.ajax({
                 url: '/api/user/cache/refresh',

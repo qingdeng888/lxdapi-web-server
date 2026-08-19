@@ -54,14 +54,17 @@ system:
       database: "__POSTGRES_DATABASE__"
       sslmode: "__POSTGRES_SSLMODE__"
 
-# LXC配置
-lxc:
-  # LXD Socket路径
-  socket: "/var/snap/lxd/common/lxd/unix.socket"
+# 虚拟化配置（默认 Debian + Incus）
+virtualization:
+  provider: "incus"
+  binary: "incus"
+  remote: "local"
+  socket: "/var/lib/incus/unix.socket"
   # 命令超时(秒)
   timeout: 300
   # 默认存储池
   default_storage: "default"
+  default_network: "incusbr0"
 
 # 流量监控配置
 traffic:
@@ -109,4 +112,3 @@ plugins:
   # Nginx反向代理插件
   nginx:
     enabled: __NGINX_ENABLED__
-

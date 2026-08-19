@@ -8,7 +8,7 @@ import (
 	"lxdapi/internal/db"
 	"lxdapi/internal/ipv4"
 	"lxdapi/internal/ipv6"
-	"lxdapi/internal/lxc"
+	"lxdapi/internal/incus"
 	"lxdapi/models"
 	"lxdapi/pkg/logger"
 	"lxdapi/pkg/plugin"
@@ -21,17 +21,17 @@ import (
 )
 
 type ContainerService struct {
-	lxcClient *lxc.Client
+	incusClient *incus.Client
 }
 
 func NewContainerService() *ContainerService {
 	return &ContainerService{
-		lxcClient: lxc.NewClient(),
+		incusClient: incus.NewClient(),
 	}
 }
 
-func (s *ContainerService) GetLXCClient() *lxc.Client {
-	return s.lxcClient
+func (s *ContainerService) GetIncusClient() *incus.Client {
+	return s.incusClient
 }
 
 func generatePassword() string {
@@ -71,7 +71,7 @@ func generatePassword() string {
 }
 
 func (s *ContainerService) Create(ctx context.Context, req *models.CreateContainerRequest) error {
-	if s.lxcClient.ContainerExists(ctx, req.Name) {
+	if s.incusClient.ContainerExists(ctx, req.Name) {
 		return fmt.Errorf("容器已存在: %s", req.Name)
 	}
 	
@@ -120,26 +120,26 @@ func (s *ContainerService) Create(ctx context.Context, req *models.CreateContain
 	storagePool := NewStorageService().GetDefault()
 	logger.Info("使用存储池: %s", storagePool)
 	
-	if err := s.lxcClient.CreateContainerWithConfig(ctx, req.Name, req.Image, storagePool, req.CPU, memory, disk, ingress, egress, req.AllowNesting, req.MemorySwap, req.Privileged, "", cpuAllowance, ioRead, ioWrite, req.ProcessesLimit); err != nil {
+	if err := s.incusClient.CreateContainerWithConfig(ctx, req.Name, req.Image, storagePool, req.CPU, memory, disk, ingress, egress, req.AllowNesting, req.MemorySwap, req.Privileged, "", cpuAllowance, ioRead, ioWrite, req.ProcessesLimit); err != nil {
 		return fmt.Errorf("创建容器失败: %v", err)
 	}
 	
-	if err := s.lxcClient.StartContainer(ctx, req.Name); err != nil {
+	if err := s.incusClient.StartContainer(ctx, req.Name); err != nil {
 		logger.Warn("启动容器失败: %v", err)
 	}
 	
 	imageAlias := req.Image
-	if info, err := s.lxcClient.GetContainerInfo(ctx, req.Name); err == nil {
+	if info, err := s.incusClient.GetContainerInfo(ctx, req.Name); err == nil {
 		if imageDesc, ok := info.Config["image.description"].(string); ok && imageDesc != "" {
 			imageAlias = imageDesc
-			logger.Info("从LXD获取镜像别名: %s", imageAlias)
+			logger.Info("从Incus获取镜像别名: %s", imageAlias)
 		}
 	}
 	
-	if _, err := s.lxcClient.ExecInContainer(ctx, req.Name, []string{"hostnamectl", "set-hostname", req.Name}); err != nil {
+	if _, err := s.incusClient.ExecInContainer(ctx, req.Name, []string{"hostnamectl", "set-hostname", req.Name}); err != nil {
 		logger.Warn("使用hostnamectl设置主机名失败，尝试直接修改文件: %v", err)
 		setHostnameCmd := fmt.Sprintf("echo '%s' > /etc/hostname && hostname %s", req.Name, req.Name)
-		if _, err := s.lxcClient.ExecInContainer(ctx, req.Name, []string{"sh", "-c", setHostnameCmd}); err != nil {
+		if _, err := s.incusClient.ExecInContainer(ctx, req.Name, []string{"sh", "-c", setHostnameCmd}); err != nil {
 			logger.Warn("设置主机名失败: %v", err)
 		} else {
 			logger.Info("主机名已设置: %s", req.Name)
@@ -154,13 +154,13 @@ func (s *ContainerService) Create(ctx context.Context, req *models.CreateContain
 		logger.Info("未指定密码，已自动生成密码")
 	}
 	
-	if err := s.lxcClient.SetRootPassword(ctx, req.Name, actualPassword); err != nil {
+	if err := s.incusClient.SetRootPassword(ctx, req.Name, actualPassword); err != nil {
 		logger.Warn("设置root密码失败: %v", err)
 	} else {
 		logger.Info("root密码已设置")
 	}
 	
-	macAddress, err := s.lxcClient.GetContainerMAC(ctx, req.Name)
+	macAddress, err := s.incusClient.GetContainerMAC(ctx, req.Name)
 	if err != nil {
 		logger.Warn("获取容器MAC地址失败: %v", err)
 		macAddress = ""
@@ -217,7 +217,7 @@ func (s *ContainerService) Create(ctx context.Context, req *models.CreateContain
 	
 	if err := db.DB.Create(container).Error; err != nil {
 		logger.Error("保存容器记录失败: %v", err)
-		s.lxcClient.DeleteContainer(ctx, req.Name)
+		s.incusClient.DeleteContainer(ctx, req.Name)
 		return fmt.Errorf("保存容器记录失败: %v", err)
 	}
 	
@@ -298,7 +298,7 @@ func (s *ContainerService) Create(ctx context.Context, req *models.CreateContain
 }
 
 func (s *ContainerService) Start(ctx context.Context, name string) error {
-	if err := s.lxcClient.StartContainer(ctx, name); err != nil {
+	if err := s.incusClient.StartContainer(ctx, name); err != nil {
 		return err
 	}
 	db.DB.Model(&models.Container{}).Where("name = ?", name).Update("status", "running")
@@ -307,7 +307,7 @@ func (s *ContainerService) Start(ctx context.Context, name string) error {
 }
 
 func (s *ContainerService) Stop(ctx context.Context, name string) error {
-	if err := s.lxcClient.StopContainer(ctx, name); err != nil {
+	if err := s.incusClient.StopContainer(ctx, name); err != nil {
 		return err
 	}
 	db.DB.Model(&models.Container{}).Where("name = ?", name).Update("status", "stopped")
@@ -316,7 +316,7 @@ func (s *ContainerService) Stop(ctx context.Context, name string) error {
 }
 
 func (s *ContainerService) Restart(ctx context.Context, name string) error {
-	if err := s.lxcClient.RestartContainer(ctx, name); err != nil {
+	if err := s.incusClient.RestartContainer(ctx, name); err != nil {
 		return err
 	}
 	db.DB.Model(&models.Container{}).Where("name = ?", name).Update("status", "running")
@@ -325,7 +325,7 @@ func (s *ContainerService) Restart(ctx context.Context, name string) error {
 }
 
 func (s *ContainerService) Pause(ctx context.Context, name string) error {
-	if err := s.lxcClient.PauseContainer(ctx, name); err != nil {
+	if err := s.incusClient.PauseContainer(ctx, name); err != nil {
 		return err
 	}
 	db.DB.Model(&models.Container{}).Where("name = ?", name).Update("status", "frozen")
@@ -334,7 +334,7 @@ func (s *ContainerService) Pause(ctx context.Context, name string) error {
 }
 
 func (s *ContainerService) Resume(ctx context.Context, name string) error {
-	if err := s.lxcClient.ResumeContainer(ctx, name); err != nil {
+	if err := s.incusClient.ResumeContainer(ctx, name); err != nil {
 		return err
 	}
 	db.DB.Model(&models.Container{}).Where("name = ?", name).Update("status", "running")
@@ -355,10 +355,10 @@ func (s *ContainerService) Reinstall(ctx context.Context, name, image, password 
 	}
 
 	needCreate := false
-	if s.lxcClient.ContainerExists(ctx, name) {
-		if err := s.lxcClient.RebuildContainer(ctx, name, image); err != nil {
+	if s.incusClient.ContainerExists(ctx, name) {
+		if err := s.incusClient.RebuildContainer(ctx, name, image); err != nil {
 			logger.Warn("rebuild 失败，尝试删除后重建: %v", err)
-			s.lxcClient.DeleteContainer(ctx, name)
+			s.incusClient.DeleteContainer(ctx, name)
 			needCreate = true
 		}
 	} else {
@@ -396,7 +396,7 @@ func (s *ContainerService) Reinstall(ctx context.Context, name, image, password 
 			ioWrite = fmt.Sprintf("%dMB", container.IOWrite)
 		}
 		storagePool := NewStorageService().GetDefault()
-		if err := s.lxcClient.CreateContainerWithConfig(ctx, name, image, storagePool,
+		if err := s.incusClient.CreateContainerWithConfig(ctx, name, image, storagePool,
 			container.CPU, memory, disk, ingress, egress,
 			container.AllowNesting, container.MemorySwap, container.Privileged,
 			"", cpuAllowance, ioRead, ioWrite, container.ProcessesLimit); err != nil {
@@ -406,7 +406,7 @@ func (s *ContainerService) Reinstall(ctx context.Context, name, image, password 
 
 	time.Sleep(3 * time.Second)
 
-	if err := s.lxcClient.StartContainer(ctx, name); err != nil {
+	if err := s.incusClient.StartContainer(ctx, name); err != nil {
 		if !strings.Contains(err.Error(), "already running") {
 			return fmt.Errorf("启动容器失败: %v", err)
 		}
@@ -414,17 +414,17 @@ func (s *ContainerService) Reinstall(ctx context.Context, name, image, password 
 	}
 
 	imageAlias := image
-	if info, err := s.lxcClient.GetContainerInfo(ctx, name); err == nil {
+	if info, err := s.incusClient.GetContainerInfo(ctx, name); err == nil {
 		if imageDesc, ok := info.Config["image.description"].(string); ok && imageDesc != "" {
 			imageAlias = imageDesc
-			logger.Info("从LXD获取镜像别名: %s", imageAlias)
+			logger.Info("从Incus获取镜像别名: %s", imageAlias)
 		}
 	}
 
-	if _, err := s.lxcClient.ExecInContainer(ctx, name, []string{"hostnamectl", "set-hostname", name}); err != nil {
+	if _, err := s.incusClient.ExecInContainer(ctx, name, []string{"hostnamectl", "set-hostname", name}); err != nil {
 		logger.Warn("使用hostnamectl设置主机名失败，尝试直接修改文件: %v", err)
 		setHostnameCmd := fmt.Sprintf("echo '%s' > /etc/hostname && hostname %s", name, name)
-		if _, err := s.lxcClient.ExecInContainer(ctx, name, []string{"sh", "-c", setHostnameCmd}); err != nil {
+		if _, err := s.incusClient.ExecInContainer(ctx, name, []string{"sh", "-c", setHostnameCmd}); err != nil {
 			logger.Warn("设置主机名失败: %v", err)
 		} else {
 			logger.Info("主机名已设置: %s", name)
@@ -439,7 +439,7 @@ func (s *ContainerService) Reinstall(ctx context.Context, name, image, password 
 	}
 	
 	if finalPassword != "" {
-		if err := s.lxcClient.SetRootPassword(ctx, name, finalPassword); err != nil {
+		if err := s.incusClient.SetRootPassword(ctx, name, finalPassword); err != nil {
 			logger.Warn("设置root密码失败: %v", err)
 		} else {
 			if password != "" {
@@ -540,8 +540,8 @@ func (s *ContainerService) Delete(ctx context.Context, name string) error {
 		db.DB.Unscoped().Where("container_name = ?", name).Delete(&models.IPv6Binding{})
 	}
 	
-	if err := s.lxcClient.DeleteContainer(ctx, name); err != nil {
-		logger.Warn("删除LXD容器失败: %v，继续清理数据库和缓存", err)
+	if err := s.incusClient.DeleteContainer(ctx, name); err != nil {
+		logger.Warn("删除Incus容器失败: %v，继续清理数据库和缓存", err)
 	}
 	
 	db.DB.Unscoped().Where("name = ?", name).Delete(&models.Container{})
@@ -565,7 +565,7 @@ func (s *ContainerService) Delete(ctx context.Context, name string) error {
 }
 
 func (s *ContainerService) GetStatus(ctx context.Context, name string) (string, error) {
-	return s.lxcClient.GetContainerStatus(ctx, name)
+	return s.incusClient.GetContainerStatus(ctx, name)
 }
 
 func (s *ContainerService) Get(name string) (*models.Container, error) {
@@ -601,11 +601,11 @@ func ListContainersByUser(userID string) ([]models.Container, error) {
 }
 
 func (s *ContainerService) ResetPassword(ctx context.Context, name, password string) error {
-	if !s.lxcClient.ContainerExists(ctx, name) {
+	if !s.incusClient.ContainerExists(ctx, name) {
 		return fmt.Errorf("容器不存在: %s", name)
 	}
 	
-	if err := s.lxcClient.SetRootPassword(ctx, name, password); err != nil {
+	if err := s.incusClient.SetRootPassword(ctx, name, password); err != nil {
 		return fmt.Errorf("设置密码失败: %v", err)
 	}
 	
@@ -621,7 +621,7 @@ func GetContainerFromCache(name string) (interface{}, bool) {
 }
 
 func (s *ContainerService) GetInfo(ctx context.Context, name string) (map[string]interface{}, error) {
-	info, err := s.lxcClient.GetContainerInfo(ctx, name)
+	info, err := s.incusClient.GetContainerInfo(ctx, name)
 	if err != nil {
 		return nil, err
 	}
@@ -744,7 +744,7 @@ func (s *ContainerService) GetInfo(ctx context.Context, name string) (map[string
 }
 
 func (s *ContainerService) getContainerIP(ctx context.Context, name string) string {
-	ip, err := s.lxcClient.GetContainerIP(ctx, name)
+	ip, err := s.incusClient.GetContainerIP(ctx, name)
 	if err != nil {
 		logger.Warn("获取容器 %s 内网IPv4失败: %v", name, err)
 		return ""
@@ -753,7 +753,7 @@ func (s *ContainerService) getContainerIP(ctx context.Context, name string) stri
 }
 
 func (s *ContainerService) getContainerIPv6(ctx context.Context, name string) string {
-	ip, err := s.lxcClient.GetContainerIPv6(ctx, name)
+	ip, err := s.incusClient.GetContainerIPv6(ctx, name)
 	if err != nil {
 		logger.Warn("获取容器 %s 内网IPv6失败: %v", name, err)
 		return ""
@@ -930,9 +930,9 @@ func (s *ContainerService) updateContainerIPv6Rules(containerName, oldIP, newIP 
 }
 
 func getContainerCPUUsagePercent(ctx context.Context, containerName string) float64 {
-	lxcClient := lxc.NewClient()
+	incusClient := incus.NewClient()
 	
-	output, err := lxcClient.ExecInContainer(ctx, containerName, []string{"sh", "-c", "vmstat 1 2 | tail -1 | awk '{print $15}'"})
+	output, err := incusClient.ExecInContainer(ctx, containerName, []string{"sh", "-c", "vmstat 1 2 | tail -1 | awk '{print $15}'"})
 	if err != nil {
 		return 0
 	}
@@ -973,8 +973,8 @@ func (s *ContainerService) UpdateConfig(ctx context.Context, name string, req *m
 		return nil, fmt.Errorf("容器不存在: %s", name)
 	}
 
-	if !s.lxcClient.ContainerExists(ctx, name) {
-		return nil, fmt.Errorf("容器在LXD中不存在: %s", name)
+	if !s.incusClient.ContainerExists(ctx, name) {
+		return nil, fmt.Errorf("容器在Incus中不存在: %s", name)
 	}
 
 	var updated []string
@@ -1051,8 +1051,8 @@ func (s *ContainerService) UpdateConfig(ctx context.Context, name string, req *m
 	}
 
 	if cpu > 0 || memory != "" || disk != "" || ingress != "" || egress != "" || cpuAllowance != "" || ioRead != "" || ioWrite != "" || processesLimit > 0 || req.Privileged != nil || req.MemorySwap != nil || req.AllowNesting != nil {
-		if err := s.lxcClient.UpdateContainerConfig(ctx, name, cpu, memory, disk, ingress, egress, cpuAllowance, ioRead, ioWrite, processesLimit, req.Privileged, req.MemorySwap, req.AllowNesting); err != nil {
-			return nil, fmt.Errorf("更新LXD配置失败: %v", err)
+		if err := s.incusClient.UpdateContainerConfig(ctx, name, cpu, memory, disk, ingress, egress, cpuAllowance, ioRead, ioWrite, processesLimit, req.Privileged, req.MemorySwap, req.AllowNesting); err != nil {
+			return nil, fmt.Errorf("更新Incus配置失败: %v", err)
 		}
 	}
 

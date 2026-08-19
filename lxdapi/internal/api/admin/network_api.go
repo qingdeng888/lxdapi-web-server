@@ -2,7 +2,8 @@ package admin
 
 import (
 	"context"
-	"os/exec"
+	"lxdapi/internal/core"
+	"lxdapi/internal/incus"
 	"strings"
 	"time"
 
@@ -16,14 +17,15 @@ func GetNetworkNATStatus(c *gin.Context) {
 
 	result := gin.H{}
 
-	v4Output, err := exec.CommandContext(ctx, "lxc", "network", "get", "lxdbr0", "ipv4.nat").Output()
+	network := core.GlobalConfig.Virtualization.DefaultNetwork
+	v4Output, err := incus.CommandContext(ctx, "network", "get", network, "ipv4.nat").Output()
 	if err != nil {
 		result["ipv4_nat"] = false
 	} else {
 		result["ipv4_nat"] = strings.TrimSpace(string(v4Output)) == "true"
 	}
 
-	v6Output, err := exec.CommandContext(ctx, "lxc", "network", "get", "lxdbr0", "ipv6.nat").Output()
+	v6Output, err := incus.CommandContext(ctx, "network", "get", network, "ipv6.nat").Output()
 	if err != nil {
 		result["ipv6_nat"] = false
 	} else {
@@ -52,7 +54,7 @@ func SetNetworkNATStatus(c *gin.Context) {
 		if *req.IPv4NAT {
 			value = "true"
 		}
-		if err := exec.CommandContext(ctx, "lxc", "network", "set", "lxdbr0", "ipv4.nat", value).Run(); err != nil {
+		if err := incus.CommandContext(ctx, "network", "set", network, "ipv4.nat", value).Run(); err != nil {
 			response.Error(c, 500, "设置IPv4 NAT失败: "+err.Error())
 			return
 		}
@@ -63,7 +65,7 @@ func SetNetworkNATStatus(c *gin.Context) {
 		if *req.IPv6NAT {
 			value = "true"
 		}
-		if err := exec.CommandContext(ctx, "lxc", "network", "set", "lxdbr0", "ipv6.nat", value).Run(); err != nil {
+		if err := incus.CommandContext(ctx, "network", "set", network, "ipv6.nat", value).Run(); err != nil {
 			response.Error(c, 500, "设置IPv6 NAT失败: "+err.Error())
 			return
 		}

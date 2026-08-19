@@ -22,7 +22,7 @@ func GetBrandSettings(c *gin.Context) {
 		logger.Error("获取品牌设置失败: %v", err)
 		response.Success(c, gin.H{
 			"system_name":  "LXD API",
-			"system_title": "LXD容器管理系统",
+			"system_title": "Incus容器管理系统",
 			"footer_text":  "LXD API 容器管理平台",
 		})
 		return

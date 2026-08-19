@@ -1,4 +1,4 @@
-package lxc
+package incus
 
 import (
 	"context"
@@ -108,7 +108,7 @@ func (c *Client) CreateContainerWithConfig(ctx context.Context, name, image, sto
 		}
 	}
 	
-	logger.Info("执行LXC命令: lxc %s", strings.Join(args, " "))
+	logger.Info("执行Incus命令: incus %s", strings.Join(args, " "))
 	_, err := c.exec(ctx, args...)
 	if err != nil {
 		return fmt.Errorf("创建容器失败: %v", err)
@@ -133,7 +133,7 @@ func (c *Client) CreateContainerWithConfig(ctx context.Context, name, image, sto
 			deviceArgs = append(deviceArgs, fmt.Sprintf("limits.egress=%s", egress))
 		}
 		
-		logger.Info("配置网络设备: lxc %s", strings.Join(deviceArgs, " "))
+		logger.Info("配置网络设备: incus %s", strings.Join(deviceArgs, " "))
 		_, err = c.exec(ctx, deviceArgs...)
 		if err != nil {
 			return fmt.Errorf("配置网络设备失败: %v", err)
@@ -233,7 +233,7 @@ func (c *Client) DeleteContainer(ctx context.Context, name string) error {
 	logger.Info("删除容器: %s", name)
 	
 	if !c.ContainerExists(ctx, name) {
-		logger.Info("容器不存在，跳过LXD删除: %s", name)
+		logger.Info("容器不存在，跳过Incus删除: %s", name)
 		return nil
 	}
 	

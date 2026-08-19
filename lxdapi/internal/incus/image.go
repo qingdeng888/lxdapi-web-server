@@ -1,4 +1,4 @@
-package lxc
+package incus
 
 import (
 	"context"
@@ -25,7 +25,7 @@ type ImageAlias struct {
 }
 
 func (c *Client) ListImages(ctx context.Context) ([]ImageInfo, error) {
-	logger.Info("获取LXD镜像列表")
+	logger.Info("获取Incus镜像列表")
 	
 	cmd := []string{"image", "list", "--format", "json"}
 	output, err := c.exec(ctx, cmd...)

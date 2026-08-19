@@ -1100,8 +1100,8 @@ func GetContainerDNS(c *gin.Context) {
 	}
 	
 	ctx := context.Background()
-	lxcClient := service.NewContainerService().GetLXCClient()
-	dnsServers, err := lxcClient.GetContainerDNS(ctx, name)
+	incusClient := service.NewContainerService().GetIncusClient()
+	dnsServers, err := incusClient.GetContainerDNS(ctx, name)
 	if err != nil {
 		response.Error(c, 500, err.Error())
 		return
@@ -1137,9 +1137,9 @@ func SetContainerDNS(c *gin.Context) {
 	}
 	
 	ctx := context.Background()
-	lxcClient := service.NewContainerService().GetLXCClient()
+	incusClient := service.NewContainerService().GetIncusClient()
 	
-	if err := lxcClient.SetContainerDNS(ctx, name, req.DNS); err != nil {
+	if err := incusClient.SetContainerDNS(ctx, name, req.DNS); err != nil {
 		response.Error(c, 500, err.Error())
 		return
 	}

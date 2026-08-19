@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"lxdapi/internal/db"
-	"lxdapi/internal/lxc"
+	"lxdapi/internal/incus"
 	"lxdapi/models"
 	"lxdapi/pkg/logger"
 )
@@ -122,9 +122,9 @@ func DeleteContainerCache(name string) {
 }
 
 func RefreshAllContainersCache(ctx context.Context) (int, int, error) {
-	lxcClient := lxc.NewClient()
+	incusClient := incus.NewClient()
 	
-	containerNames, err := lxcClient.ListAllContainers(ctx)
+	containerNames, err := incusClient.ListAllContainers(ctx)
 	if err != nil {
 		return 0, 0, fmt.Errorf("获取容器列表失败: %v", err)
 	}
@@ -146,9 +146,9 @@ func RefreshAllContainersCache(ctx context.Context) (int, int, error) {
 }
 
 func RefreshContainerCache(ctx context.Context, name string) error {
-	lxcClient := lxc.NewClient()
+	incusClient := incus.NewClient()
 
-	info, err := lxcClient.GetContainerInfo(ctx, name)
+	info, err := incusClient.GetContainerInfo(ctx, name)
 	if err != nil {
 		return err
 	}
@@ -263,9 +263,9 @@ func parseCPULimit(limit string) int {
 }
 
 func getContainerCPUUsagePercent(ctx context.Context, containerName string) float64 {
-	lxcClient := lxc.NewClient()
+	incusClient := incus.NewClient()
 	
-	output, err := lxcClient.ExecInContainer(ctx, containerName, []string{"sh", "-c", "vmstat 1 2 | tail -1 | awk '{print $15}'"})
+	output, err := incusClient.ExecInContainer(ctx, containerName, []string{"sh", "-c", "vmstat 1 2 | tail -1 | awk '{print $15}'"})
 	if err != nil {
 		logger.Warn("获取容器 %s CPU使用率失败: %v", containerName, err)
 		return 0

@@ -1346,7 +1346,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/lxdapi_pkg_response.Response'
-      summary: 从LXD同步存储池
+      summary: 从Incus同步存储池
       tags:
       - Admin API - 存储池管理
   /api/admin/tasks:
@@ -1634,7 +1634,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: 从LXD同步模板到数据库
+      description: 从Incus同步模板到数据库
       produces:
       - application/json
       responses:

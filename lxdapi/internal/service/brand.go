@@ -24,19 +24,19 @@ func (s *BrandService) GetSettings() (*models.BrandSettings, error) {
 	if err := db.DB.First(&settings).Error; err != nil {
 		settings = models.BrandSettings{
 			AdminSystemName:      "LXD API - 管理后台",
-			AdminSystemTitle:     "管理后台 - LXD容器管理系统",
+			AdminSystemTitle:     "管理后台 - Incus容器管理系统",
 			AdminLoginTitle:      "管理员登录",
 			AdminBgImage:         "",
 			AdminBgOpacity:       75,
 			AdminContentOpacity:  85,
 			UserSystemName:       "LXD API - 用户中心",
-			UserSystemTitle:      "用户中心 - LXD容器管理系统",
+			UserSystemTitle:      "用户中心 - Incus容器管理系统",
 			UserLoginTitle:       "用户登录",
 			UserBgImage:          "",
 			UserBgOpacity:        75,
 			UserContentOpacity:   85,
 			ContainerSystemName:  "LXD API - 容器控制",
-			ContainerSystemTitle: "容器管理 - LXD容器管理系统",
+			ContainerSystemTitle: "容器管理 - Incus容器管理系统",
 			ContainerLoginTitle:  "容器登录",
 			ContainerBgImage:     "",
 			ContainerBgOpacity:   75,
@@ -124,19 +124,19 @@ func (s *BrandService) ResetToDefault() error {
 	}
 	
 	settings.AdminSystemName = "LXD API - 管理后台"
-	settings.AdminSystemTitle = "管理后台 - LXD容器管理系统"
+	settings.AdminSystemTitle = "管理后台 - Incus容器管理系统"
 	settings.AdminLoginTitle = "管理员登录"
 	settings.AdminBgImage = ""
 	settings.AdminBgOpacity = 75
 	settings.AdminContentOpacity = 85
 	settings.UserSystemName = "LXD API - 用户中心"
-	settings.UserSystemTitle = "用户中心 - LXD容器管理系统"
+	settings.UserSystemTitle = "用户中心 - Incus容器管理系统"
 	settings.UserLoginTitle = "用户登录"
 	settings.UserBgImage = ""
 	settings.UserBgOpacity = 75
 	settings.UserContentOpacity = 85
 	settings.ContainerSystemName = "LXD API - 容器控制"
-	settings.ContainerSystemTitle = "容器管理 - LXD容器管理系统"
+	settings.ContainerSystemTitle = "容器管理 - Incus容器管理系统"
 	settings.ContainerLoginTitle = "容器登录"
 	settings.ContainerBgImage = ""
 	settings.ContainerBgOpacity = 75

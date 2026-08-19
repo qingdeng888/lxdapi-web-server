@@ -17,15 +17,15 @@ func BrandMiddleware() gin.HandlerFunc {
 			logger.Warn("获取品牌设置失败，使用默认值: %v", err)
 			if len(path) >= 6 && path[:6] == "/admin" {
 				c.Set("SystemName", "LXD API - 管理后台")
-				c.Set("SystemTitle", "管理后台 - LXD容器管理系统")
+				c.Set("SystemTitle", "管理后台 - Incus容器管理系统")
 				c.Set("LoginTitle", "管理员登录")
 			} else if len(path) >= 5 && path[:5] == "/user" {
 				c.Set("SystemName", "LXD API - 用户中心")
-				c.Set("SystemTitle", "用户中心 - LXD容器管理系统")
+				c.Set("SystemTitle", "用户中心 - Incus容器管理系统")
 				c.Set("LoginTitle", "用户登录")
 			} else if len(path) >= 10 && path[:10] == "/container" {
 				c.Set("SystemName", "容器控制面板")
-				c.Set("SystemTitle", "容器管理 - LXD容器管理系统")
+				c.Set("SystemTitle", "容器管理 - Incus容器管理系统")
 				c.Set("LoginTitle", "容器登录")
 			}
 			c.Set("FaviconUrl", "")

@@ -4,18 +4,18 @@ import (
 	"context"
 	"fmt"
 	"lxdapi/internal/db"
-	"lxdapi/internal/lxc"
+	"lxdapi/internal/incus"
 	"lxdapi/models"
 	"lxdapi/pkg/logger"
 )
 
 type TemplateService struct {
-	lxcClient *lxc.Client
+	incusClient *incus.Client
 }
 
 func NewTemplateService() *TemplateService {
 	return &TemplateService{
-		lxcClient: lxc.NewClient(),
+		incusClient: incus.NewClient(),
 	}
 }
 
@@ -46,12 +46,12 @@ func (s *TemplateService) List() ([]models.TemplateListResponse, error) {
 	return result, nil
 }
 
-func (s *TemplateService) SyncFromLXD(ctx context.Context) (int, int, int, error) {
-	logger.Info("开始从LXD同步镜像模板")
+func (s *TemplateService) SyncFromIncus(ctx context.Context) (int, int, int, error) {
+	logger.Info("开始从Incus同步镜像模板")
 	
-	images, err := s.lxcClient.ListImages(ctx)
+	images, err := s.incusClient.ListImages(ctx)
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("获取LXD镜像列表失败: %v", err)
+		return 0, 0, 0, fmt.Errorf("获取Incus镜像列表失败: %v", err)
 	}
 	
 	added := 0
@@ -139,8 +139,8 @@ func (s *TemplateService) SyncFromLXD(ctx context.Context) (int, int, int, error
 func (s *TemplateService) Delete(ctx context.Context, fingerprint string) error {
 	logger.Info("删除模板: %s", fingerprint)
 	
-	if err := s.lxcClient.DeleteImage(ctx, fingerprint); err != nil {
-		return fmt.Errorf("从LXD删除镜像失败: %v", err)
+	if err := s.incusClient.DeleteImage(ctx, fingerprint); err != nil {
+		return fmt.Errorf("从Incus删除镜像失败: %v", err)
 	}
 	
 	if err := db.DB.Unscoped().Where("fingerprint = ?", fingerprint).Delete(&models.Template{}).Error; err != nil {
